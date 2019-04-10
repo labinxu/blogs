@@ -20,12 +20,33 @@ void combinations(int l, std::array<int,4> &ret){
 }
 
 void combinations_2(){
-    for(int num=1;num<vitems.size();++num){
-        std::vector<string> tmp;
-        for(int i = 0; i<num; ++i){
-            tmp.push_back(vitems[i]);
+   
+    std::vector<int> vints = {1,2,3,4,5};
+    std::vector<vector<int> > results;
+    std::vector<int> r,l;
+    l.push_back(1);
+    r.push_back(0);
+    results.push_back(l);
+    results.push_back(r);
+    for(int i = 1;i < vints.size(); ++i){
+        auto len = results.size();
+        for(int j=0;j<len;++j){
+           auto tmp = results[j];
+           results[j].push_back(1);
+           tmp.push_back(0);
+           results.push_back(tmp);
         }
+
     }
+    cout<<"number of results "<<results.size()<<endl;
+    for(auto r:results){
+        for(auto rr:r){
+            cout<<rr;
+        }
+        cout<<endl;
+    
+}
+
 }
 int main(){
     std::array<int, 4> result;

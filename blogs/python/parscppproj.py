@@ -47,11 +47,10 @@ class ProjClassParser:
                     classname = r[0]
                     baseclasses = r[1].split(',')
                     logger.debug("class name: %s,base class %s" % (classname,','.join(baseclasses)))
-                    for c in baseclasses:
-                        if c in result:
-                            result[c].append(classname)
-                        else:
-                            result[c] = [classname]
+                    if classname in result:
+                        result[classname].extend(baseclasses)
+                    else:
+                        result[classname] = baseclasses
                 elif(len(r)==1):
                     classname = r[0]
                     if classname not in result:
@@ -62,10 +61,12 @@ class ProjClassParser:
 
     def _output(self, data, ofile):
         with open(ofile) as f:
-            for key,value in data.items():
-                level = 0
+            for key, baseclasses in data.items():
 
-    def _getlevel(self,classname, data):
+                level = 0
+    def _getbase(self, classname, data):
+        
+    def _getlevel(self, classname, data):
         level = 1;
         if classname in data:
             for vs in data[classname].values():

@@ -15,8 +15,10 @@ typedef int BOOL;
 const int END_CHAR = 4 ;
 const int PWD4 = 2;
 const int PWD6 = 3;
-//char LEXI_CHARS[] =  {" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"}
-char LEXI_CHARS[] =  {"0123456789"};
+char LEXI_CHARS[] =  {" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"}
+// char LEXI_CHARS[] =  {"0123456789"};
+
+
 char accumulate(char* begin, char *end){
     char sum = 0;
     while(begin != end){

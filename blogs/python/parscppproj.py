@@ -68,6 +68,15 @@ class ProjClassParser:
         print(self.result)
         return self.result
 
+    def _normalizational(self):
+        for clsname, parents in self.result.items():
+            result = []
+            result.append(clsname)
+            for parent in parents:
+                result.append(parent)
+                result.extend(_extra_parents(parent, self.result))
+                pass
+
     def _normalization_parents(self):
         for clsname, parents in self.result.items():
             for i, parent in enumerate(parents):

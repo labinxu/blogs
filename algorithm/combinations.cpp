@@ -2,11 +2,13 @@
 #include <iostream>
 #include <string>
 #include <array>
+#include <algorithm>
+
 using namespace std;
 std::vector<string> vitems ={"tom","jim", "jiaojiao", "mark"};
 std::vector<array<int, 4> > results;
 void combinations(int l, std::array<int,4> &ret){
-    if(l==ret.size()){
+    if(l == ret.size() ){
         ret[l-1] = 1;
         results.push_back(ret);
         ret[l-1] = 0;
@@ -16,7 +18,8 @@ void combinations(int l, std::array<int,4> &ret){
         ret[i] = 1;
         combinations(i+1, ret);
         ret[i] = 0;
-    }
+    }// TODO:
+    
 }
 
 void combinations_2(){
@@ -26,7 +29,8 @@ void combinations_2(){
     r.push_back(0);
     results.push_back(l);
     results.push_back(r);
-    for(int i = 1; i < vitems.size(); ++i){
+    for(int i = 1; i < vitems.size()
+            ; ++i){
         auto len = results.size();
         for(int j=0; j<len; ++j){
            auto tmp = results[j];

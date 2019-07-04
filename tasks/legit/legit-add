@@ -13,25 +13,24 @@ objsdir=${legitdir}/objects
 declare -A index_data
 
 # read the index content if exist
-if [ -f ${INDEX_FILE} ];then
-    while read line
-    do
-        if [[ $line == "" ]]; then
-            break
-        fi
-        line=($line)
-        index_data[${line[0]}]=${line[1]}
-    done < ${legitdir}/index
-fi
+# if [ -f ${INDEX_FILE} ];then
+#     while read line
+#     do
+#         if [[ $line == "" ]]; then
+#             break
+#         fi
+#         line=($line)
+#         index_data[${line[0]}]=${line[1]}
+#     done < ${legitdir}/index
+# fi
 
-echo ${!index_data[*]}
+# echo ${!index_data[*]}
 for i in $*
 do
     if [ ! -f $i ]; then
         echo $i " not exits"
         exit 2
     fi
-    #echo $i
     # store to index
     sha1=(`sha1sum $i`)
     index_data[${sha1[0]}]=${sha1[1]}

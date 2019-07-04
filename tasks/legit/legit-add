@@ -1,0 +1,57 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+    echo "Use age add files"
+    exit 1
+fi
+
+legitdir=.legit
+INDEX_FILE=${legitdir}/index
+objsdir=${legitdir}/objects
+
+
+declare -A index_data
+
+# read the index content if exist
+if [ -f ${INDEX_FILE} ];then
+    while read line
+    do
+        if [[ $line == "" ]]; then
+            break
+        fi
+        line=($line)
+        index_data[${line[0]}]=${line[1]}
+    done < ${legitdir}/index
+fi
+
+echo ${!index_data[*]}
+for i in $*
+do
+    if [ ! -f $i ]; then
+        echo $i " not exits"
+        exit 2
+    fi
+    #echo $i
+    # store to index
+    sha1=(`sha1sum $i`)
+    index_data[${sha1[0]}]=${sha1[1]}
+    ret=`tar -zcvf $objsdir/${sha1[0]} $i`
+done
+i=0
+if [ -f ${INDEX_FILE} ];then
+    `rm ${INDEX_FILE}`
+fi
+`touch ${INDEX_FILE}`
+
+i=0
+for key in $(echo ${!index_data[*]})
+do
+    if [[ i == 0 ]];then
+        echo "$key ${index_data[$key]}">${INDEX_FILE}
+    else
+        echo "$key ${index_data[$key]}">>${INDEX_FILE}
+    fi
+    i=`expr $i + 1`
+done
+
+

@@ -1,0 +1,12 @@
+#!/bin/bash
+if [ ! -d .legit ]; then
+    mkdir .legit
+    mkdir .legit/objects
+    # store branch
+    mkdir -p .legit/refs/heads
+    touch .legit/HEAD
+    echo "ref: refs/heads/master">.legit/HEAD
+    echo "Initialized empty legit repository in `pwd` "
+else
+  echo .legit is already exist.
+fi

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# git cat-file --batch-check --batch-all-objects
+# git cat-file -p 7854c4df70f6a51a84a14981819042417adf21
+declare -A index_data
+
+legitdir=.legit
+INDEX_FILE=${legitdir}/index
+objsdir=${legitdir}/objects
+
+if [ -f ${INDEX_FILE} ];then
+    while read line
+    do
+        if [[ $line == "" ]]; then
+            break
+        fi
+        line=($line)
+        index_data[${line[0]}]=${line[1]}
+    done < ${legitdir}/index
+else
+  echo "${INDEX_FILE} not found"
+fi
+
+if [[ $1 == "-a" ]];then
+    # all files in index file
+    echo $1
+elif [[ $1 == "-m" ]];then
+    echo $1
+else
+    echo "Usage : legit-commit -m or -a"
+    exit 1
+fi
+
+commit=$2
+echo $commit
+
+#create commit file with blob or tree
+commitfile=`mktemp commit.XXXXX -u`
+#write parent commit
+# write commits
+`echo $commit>$commitfile`
+
+sha1=(`sha1sum $commitfile`)
+ret=`tar -zcvf $objsdir/${sha1[0]} $commitfile`
+rm $commitfile

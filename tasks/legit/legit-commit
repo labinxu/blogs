@@ -2,44 +2,163 @@
 
 # git cat-file --batch-check --batch-all-objects
 # git cat-file -p 7854c4df70f6a51a84a14981819042417adf21
-declare -A index_data
-
 legitdir=.legit
 INDEX_FILE=${legitdir}/index
 objsdir=${legitdir}/objects
+masterpath=${legitdir}/refs/heads/master
 
-if [ -f ${INDEX_FILE} ];then
-    while read line
-    do
-        if [[ $line == "" ]]; then
-            break
-        fi
-        line=($line)
-        index_data[${line[0]}]=${line[1]}
-    done < ${legitdir}/index
-else
-  echo "${INDEX_FILE} not found"
+if [ ! -f ${INDEX_FILE} ];then
+    echo "${INDEX_FILE} not found"
+    exit 1
 fi
 
-if [[ $1 == "-a" ]];then
+treefile=""
+function inittree(){
+    #init tree
+    tree=$(cd `dirname $0`; pwd)
+    treedate=`stat -c %Y $tree`
+    treename=`echo $tree:$treedate | sha1sum`
+    treename=($treename)
+    treename=${treename[0]}
+    treefile=$objsdir/${treename}
+    #echo treefile $treefile
+    if [ ! -f $treefile ];then
+        touch $treefile
+        for i in `ls $tree`
+        do
+            if [ -f $i ]; then
+                sha1=`sha1sum $i`
+                sha1=($sha1)
+                echo "blob ${sha1[0]} $i">>$treefile
+            else
+                treedate=`stat -c %Y $i`
+                treesha1=`echo $i:$treedate | sha1sum`
+                treesha1=($treesha1)
+                echo "tree ${treesha1[0]} $i" >> $treefile
+            fi
+        done
+    fi
+}
+
+# read current commit
+current_commit=""
+function current_commit(){
+    while read line
+    do
+        if [[ $line == "" ]];then
+            break;
+        fi
+        current_commit=$line
+        #echo current_commit $current_commit
+        break
+    done < $masterpath
+}
+
+shouldcommit=0
+function iscommitted(){
+    # check the index file
+    index_modified_date=`stat -c %Y $1`
+    # current commit time
+    current_commit_date=`stat -c %Y $2`
+    if [ $[ $index_modified_date - $current_commit_date ] -gt 0 ];then
+        shouldcommit=1
+    fi
+}
+## count commit 
+total_commit=0
+function count_commit(){
+
+    while read line
+    do
+        tmpname=${objsdir}/$line
+        if [ -f $tmpname ];then
+
+            log $tmpname
+        fi
+    done < $1
+}
+
+function log(){
+    total_commit=`expr $total_commit + 1`
+    while read line
+    do
+        line=($line)
+        line=${line[0]}
+        if [[ $line == "parent" ]];then
+            tmpname=${objsdir}/${line[1]}
+            #echo commitname:$tmpname
+            if [ -f $tmpname ];then
+                log $tmpname
+                break
+            fi
+        fi
+    done < $1
+}
+
+
+
+# # check the index file
+commit_content=$2
+function commit(){
+    if [ -f $masterpath ];then
+        current_commit
+        iscommitted ${INDEX_FILE} ${objsdir}/${current_commit}
+        if [[ $shouldcommt == 0 ]];then
+            echo "workspace is clean."
+            exit 0
+        fi
+        count_commit $masterpath
+    fi
+
+    #create commit file with blob or tree
+    commitfile=`mktemp commit.XXXXX`
+    #write parent commit
+
+    sha1=`echo $commitfile|sha1sum`
+    sha1=($sha1)
+    objcommitfile=$objsdir/${sha1[0]}
+
+    if [ ! -f $objsdir/${sha1[0]} ]; then
+        #tar -zcvf $objsdir/${sha1[0]} $commitfile 1>/dev/null 2>/dev/null
+        echo "tree $treename">$commitfile
+        if [[ $current_commit != "" ]];then
+            echo "parent $current_commit">>$commitfile
+        fi
+        echo "author $USER">>$commitfile
+        echo "content $total_commit $commit_content">>$commitfile
+        mv $commitfile $objcommitfile
+
+        #update master branch
+        echo $objcommitfile>$masterpath
+    else
+        echo "nothing change for commit"
+    fi
+
+    #echo "commitfile $objcommitfile"
+    echo "Committed as commit $total_commit"
+    # write master
+    echo ${sha1[0]}>$masterpath
+}
+
+if [[ $1 == "-am" ]];then
     # all files in index file
-    echo $1
+    inittree
+    commit
+
 elif [[ $1 == "-m" ]];then
-    echo $1
+    # begin=`expr substr $2 1 1 `
+    # if [[ $begin == "-" ]]; then
+    #     echo "Can not start with -"
+    #     exit 1
+    # fi
+    inittree
+    commit
+
+elif [[ $1 == "-check" ]];then
+    i=`expr substr $2 1 1 `
+    echo $i
+    exit
 else
     echo "Usage : legit-commit -m or -a"
     exit 1
 fi
-
-commit=$2
-echo $commit
-
-#create commit file with blob or tree
-commitfile=`mktemp commit.XXXXX -u`
-#write parent commit
-# write commits
-`echo $commit>$commitfile`
-
-sha1=(`sha1sum $commitfile`)
-ret=`tar -zcvf $objsdir/${sha1[0]} $commitfile`
-rm $commitfile

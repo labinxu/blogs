@@ -1,0 +1,45 @@
+#!/bin/bash
+basedir=.legit
+objsdir=${basedir}/objects
+obj_master=${basedir}/refs/heads/master
+
+function frommaster(){
+
+    while read line
+    do
+        tmpname=${objsdir}/$line
+        if [ -f $tmpname ];then
+            log $tmpname
+        fi
+    done < $1
+}
+
+function log(){
+    #cat $1
+    has_parent=0
+    tmpname=""
+    while read line
+    do
+        line=($line)
+        prefix=${line[0]}
+        if [[ $prefix == "parent" ]];then
+            tmpname=${objsdir}/${line[1]}
+            #echo commitname:$tmpname
+            if [ -f $tmpname ];then
+                #log $tmpname
+                has_parent=1
+            fi
+        elif [[ $prefix == "content" ]];then
+            lengh=${#line[@]}
+            echo ${line[@]:1:$lengh-1}
+        fi
+    done < $1
+    if [[ $has_parent == 1 ]];then
+        log $tmpname
+    fi
+}
+
+# if [[ $1 == "-t" ]];then
+#     frommaster $obj_master
+# fi
+frommaster $obj_master

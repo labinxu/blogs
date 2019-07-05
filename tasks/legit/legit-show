@@ -1,0 +1,85 @@
+#!/bin/bash
+source ./envs.sh
+## count commit
+#echo $obj_master
+
+total_commit=0
+retrieved_tree=""
+function find_commit_with_index(){
+    has_parent=0
+    tmpname=""
+    while read line
+    do
+        line=($line)
+        prefix=${line[0]}
+        if [[ $prefix == "tree" ]];then
+            retrieved_tree=${line[1]}
+        elif [[ $prefix == "parent" ]];then
+            tmpname=${objsdir}/${line[1]}
+            #echo commitname:$tmpname
+            if [ -f $tmpname ];then
+                #log $tmpname
+                has_parent=1
+            fi
+        elif [[ $prefix == "content" ]];then
+            index=${line[1]}
+            if [[ $index == $2 ]];then
+                return
+            fi
+        fi
+    done < $1
+    if [[ $2 == -1 ]];then
+        return;
+    fi
+
+    if [[ $has_parent == 1 ]];then
+        find_commit_with_index $tmpname $2
+    fi
+}
+
+function legit_show(){
+    tar -xOzf $1
+}
+
+retrieved_obj=""
+function retrieve_commit(){
+    if [ -f $obj_master ]; then
+        commit=`cat $obj_master`
+        if [[ $commit == "" ]];then
+            echo "repo master has corrupted!"
+            exit
+        fi
+    fi
+    find_commit_with_index $objsdir/$commit $1
+    while read line
+    do
+        line=($line)
+        if [[ ${line[0]} == "blob" ]];then
+            if [[ ${line[2]} == $2 ]];then
+                retrieved_obj=${line[1]}
+                break
+            fi
+        fi
+    done < ${objsdir}/$retrieved_tree
+}
+
+args=$1
+if [[ $# == 0 ]];then
+    echo "Usage ./legit-show commitindex:filename"
+    exit
+fi
+
+args=($args)
+args=(${args//:/ })
+arglen=${#args[@]}
+if [[  $arglen == 2 ]];then
+    #index,filename
+    retrieve_commit ${args[0]} ${args[1]}
+    legit_show ${objsdir}/$retrieved_obj
+elif [[ $arglen == 1 ]];then
+    retrieve_commit -1 ${args[0]}
+    legit_show ${objsdir}/$retrieved_obj
+fi
+
+
+

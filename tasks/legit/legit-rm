@@ -1,0 +1,74 @@
+#!/bin/bash
+
+force=0
+cached=0
+
+source ./envs.sh
+
+if [[ $# == 0 ]]; then
+    echo "Usage ./legit-rm files file2 ... [--cached][--force]"
+    exit
+fi
+
+files=()
+function take_files(){
+    args=($*)
+    for i in "${!args[@]}";
+    do
+        if [ ${args[$i]} = "--cached" ];then
+            cached=1
+            continue
+        fi
+        if [ ${args[$i]} = "--force" ];then
+            force=1
+            continue
+        fi
+
+        files[${#files[*]}]=${args[$i]}
+    done
+}
+
+function legit_rm_cached(){
+    for i in ${files[@]}
+    do
+        if [ ! -f $i ];then
+            sed -i "/$i/d" $index_file
+            echo $i does not exist
+            continue
+        fi
+        sha1=`sha1sum $i`
+        sha1=($sha1)
+        if [ ! -f $objsdir/${sha1[0]} ];then
+            echo "Can not rm it's different to last commit"
+        else
+            if [ $force = 1 ];then
+                sed -i "/$i/d" $index_file
+            fi
+        fi
+    done
+}
+function legit_rm_directory(){
+    for i in ${files[@]}
+    do
+        sha1=`sha1sum $i`
+        sha1=($sha1)
+        if [ ! -f $objsdir/${sha1[0]} ];then
+            if [ $force = 1 ];then
+                rm $i
+            fi
+        else
+            echo "Can not rm it's different to last commit"
+        fi
+    done
+}
+function legit_rm(){
+    if [ $cached = 1 ];then
+        legit_rm_cached
+        return
+    fi
+    legit_rm_cached
+    legit_rm_directory
+}
+
+take_files $*
+legit_rm

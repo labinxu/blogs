@@ -1,6 +1,5 @@
-#!/bin/dash
+* 1 参数
 
-#1.1 参数
 #prac1.sh arg1 args2
 # 参数的个数
 numberofargmuments(){
@@ -19,10 +18,8 @@ numberofargmuments(){
 }
 # uncomment
 # numberofargmuments $*
-#1.2
-#参数的处理 1
+** 1.2 参数的处理 1
 # $* 除$0以外的所有参数, 是一个完整的字符串
-
 # $@ 除$0以外的所有参数, 是一个数组
 # 两者区别可以用下面的代码看出来
 ##./prac1.sh arg1 arg2
@@ -44,7 +41,7 @@ arguments_deal1(){
 #arguments_deal1 $@
 #arguments_deal1  $*
 
-#1.3 参数处理2
+** 1.3 参数处理 2
 argment_deal2(){
     # ./prac1.sh -m option or ./prac1.sh option -m
     # 如何取出option
@@ -61,7 +58,8 @@ argment_deal2(){
 # uncommtents
 # argment_deal2 $@
 
-# 参数处理3 shift 会将参数往左移动一位，也就相当于删除第一个参数
+** 参数处理3 
+# shift 会将参数往左移动一位，也就相当于删除第一个参数
 # eg:./prac1.sh -f v1 v2 v3  or ./prac1.sh v1 v2 v3 -f
 arguments_deal3(){
     values=""
@@ -80,32 +78,20 @@ arguments_deal3(){
 #arguments_deal3 $@
 
 
-manipulatestring(){
-    var="/user/home/user1"
-    echo ${var#*home/} # 去掉*home/ 留下 user1
-
-    # split 字符串
-    echo ========split string==========
-    vars=$(echo $var | tr '/' ' ')
+* 字符串
+** 字符串截取
+   var="/user/home/user1"
+   echo ${var#*home/} # 去掉*home/ 留下 user1
+** split & count
+    count=0
+    vars=$(echo $var | tr '/' ' ') # split
     for v in ${vars};do
+        count=`expr $count + 1` # count
         echo $v
     done
-
-    # 计算个数
-    echo ========count==========
-    count=0
-    vars=$(echo $var | tr '/' ' ')
-    for v in ${vars};do
-        #count=$count+1 # count=0+1+1+1
-        #计算需要用expr 命令
-        count=`expr $count + 1`
-    done
-    echo count=$count
-
-    #字符串拼接
+** join
     joinedstr=""
     for v in ${vars};do
-        #if [ $joinedstr = "" ];then #error [: =: unexpected operator
         if [ "$joinedstr" = "" ]; then
 
             joinedstr=$v
@@ -113,16 +99,14 @@ manipulatestring(){
             joinedstr="$joinedstr#$v"
         fi
     done
-    echo joinedstr=$joinedstr
-}
-#manipulatestring
-folder(){
-    files=$(ls | sed "s:^:`pwd`/: ")
-    #files=`ls -A /home/xulai/wks/report/*`
-    for file in $files;do echo $file
-    done
-}
-folder
+
+* 目录
+** 列出绝对路径
+  files=$(ls | sed "s:^:`pwd`/: ")
+  for f in $files;do echo $file 
+  done
+
+# http://blog.chinaunix.net/uid-25266990-id-3268759.html
 # https://www.cnblogs.com/Malphite/p/7742406.html
 # https://www.cnblogs.com/zwgblog/p/6031256.html
 # https://www.cnblogs.com/xuxm2007/p/7554543.html

@@ -89,6 +89,7 @@ arguments_deal3(){
         count=`expr $count + 1` # count
         echo $v
     done
+    # tr commands can referce here https://www.cnblogs.com/bingguoguo/articles/9188703.html
 ** join
     joinedstr=""
     for v in ${vars};do
@@ -105,7 +106,85 @@ arguments_deal3(){
   files=$(ls | sed "s:^:`pwd`/: ")
   for f in $files;do echo $file 
   done
+  
+* 函数
+** 函数的定义函数反回和调用
+bash可以有关键字function 但是dash没有，一律不使用function 关键字
+函数可以返回一些字符串或者数字
+funcreturnstr(){
+	echo "returnstring"
+}
+if [ $(funcreturnstr) = "returnstring" ] ;then
+   echo "return ok"
+fi
+# 带参数
+funcreturnstr(){
+if [ "$1" = "1" ];then
+	echo "return1"
+elif [ "$1" = "2" ];then
+	echo "return2"
+else
+	echo "returnstring"
+fi
+}
+if [ $(funcreturnstr 1) = "return1" ];then
+   echo "return1 ok"
+fi
+# 注意参数$1 在比较的时候一定要加双引号，不要问为什么，谁不加谁知道。
+* here string
+在使用while read 的时候会遇到在while里面的变量无法更改 比如
+total=0
+echo "a,b,c" | tr ',' '\n'|while read x;do
+	$((total=total+1))
+	echo in while total:$total
+done
+echo out total:$total
 
+#out total打印始终为0 原因就是 代码是通过管道传送给while read 进程，total变量被传到了
+#子进程中，而父进程是得不到在子进程中的更改的，要获得这个更改需要使用here documents
+# eg:
+echo "===here documents====="
+total=0
+while read x;do
+	total=`expr $total + 1`
+	echo in while total:$total
+done<<EOF
+`echo "a,b,c" | tr ',' '\n'`
+EOF
+
+* 读取文件
+文件每行存放的方式为key value 中间是空格，如果要取出key为某一个值的时候可以这样 
+while read line;do
+ 
+# 第一种方法
+key=`echo $line | cut -d ' ' -f1`
+if [ "$key" = "key2" ] ;then
+	echo first method: "$key"
+fi
+
+#第二中方法
+read x y <<EOF
+$line
+EOF
+if [ "$x" = "key3" ];then
+	echo second method: $x , $y
+fi
+
+done < tmpfile
+
+
+* 需要注意的地方
+** 判断文件夹和文件
+if [ -f file ];#
+if [ -d folder ];#
+#如果只是判断路径是否存在可以用 -e
+if [ -e path ] ;
+** 使用参数比较的时候一定要用双引号
+shell将参数按字符串解析，如果不用引号括起来，字符串中间有空格的时候，会出现两个字符串这样就出问题了。
+** 文件操作的时候需要注意路径，绝对路径或相对路径，要统一
+
+
+# https://www.jianshu.com/p/762d4cccee7e
 # http://blog.chinaunix.net/uid-25266990-id-3268759.html
 # https://www.cnblogs.com/Malphite/p/7742406.html
 # https://www.cnblogs.com/zwgblog/p/6031256.html

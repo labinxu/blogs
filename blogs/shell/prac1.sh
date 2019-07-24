@@ -122,8 +122,62 @@ folder(){
     for file in $files;do echo $file
     done
 }
-folder
+funcreturnstr(){
+if [ "$1" = "1" ];then
+	echo "return1"
+elif [ "$1" = "2" ];then
+	echo "return2"
+else
+	echo "returnstring"
+fi
+}
+if [ $(funcreturnstr 1) = "return1" ];then
+   echo "return1 ok"
+fi
+if [ $(funcreturnstr 2) = "return2" ];then
+   echo "return2 ok"
+fi
+
+total=0
+echo "a,b,c" | tr ',' '\n'|while read x;do
+	total=`expr $total + 1`
+	echo in while total:$total
+done
+
+echo out total:$total #
+#out total打印始终为0 原因就是 代码是通过管道传送给while read 进程，total变量被传到了
+#子进程中，而父进程是得不到在子进程中的更改的，要获得这个更改需要使用here documents
+# eg:
+echo "===here documents====="
+total=0
+while read x;do
+	total=`expr $total + 1`
+	echo in while total:$total
+done<<EOF
+`echo "a,b,c" | tr ',' '\n'`
+EOF
+
+echo out total:$total
+
+while read line;do
+
+# 第一种方法
+key=`echo $line | cut -d ' ' -f1`
+if [ "$key" = "key2" ] ;then
+	echo first method: "$key"
+fi
+
+#第二中方法
+read x y <<EOF
+$line
+EOF
+if [ "$x" = "key3" ];then
+	echo second method: $x , $y
+fi
+done < tmpfile
+# 
 # https://www.cnblogs.com/Malphite/p/7742406.html
 # https://www.cnblogs.com/zwgblog/p/6031256.html
 # https://www.cnblogs.com/xuxm2007/p/7554543.html
 # https://www.cnblogs.com/wangtao1993/p/6136894.html
+

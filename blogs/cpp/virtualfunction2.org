@@ -1,0 +1,34 @@
+* 我眼中的虚函数2
+** 构造函数为什么不能是虚构函数
+Avirtual call is a mechanism to get work done given partialinformation. In particular, "virtual" allows us to call afunction knowing only an interfaces and not the exact type of theobject. To create an object you need complete information. Inparticular, you need to know the exact type of what you want tocreate. Consequently, a "call to a constructor" cannot bevirtual.
+出处:[[http://www.stroustrup.com/bs_faq2.html#virtual-ctor][Why are destructors not virtual by default?]]
+大家谈得最多的是从存储空间角度和使用角度两个方面来解释.个人觉得还可以由内存申请初始化来说明一下.首先我们知道要发生多态必须是指针,或者引用调用(为什么呢? 一会讲) 
+比如:
+#+BEGIN_SRC c++
+struct A{
+  virtual void f1(){cout<<"A::f1()"<<endl;}
+};
+struct B :public A{
+  virtual void f1(){cout<<"B::f1()"<<endl;}
+};
+
+int main(){
+  A *pA = new B;
+  (*pA).f1();
+  A(*pA).f1();
+  B b;
+  A(b).f1();
+  A *bref=&b;
+  bref->f1();
+  delete pA;
+  return 0;
+}
+#+END_SRC
+可以尝试回答一下上面都调用了哪些个函数. 
+
+new 操作符的执行过程：
+1.调用operator new分配内存 ；
+2.调用构造函数生成类对象；
+3.返回相应指针.
+我这里说1,2两步,注意到表达式:new B;首先它不是我们说的多态的指针或引用调用,
+

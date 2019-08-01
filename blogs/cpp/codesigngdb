@@ -1,0 +1,37 @@
+Prerequisites
+
+MacOS X Mojave (10.14.x).
+Met problems considering Codesign and During startup program terminated with signal … / unknown load command 0x32, etc.
+Do NOT install gdb in advance. If you already have it (with brew for example), make a clean uninstallation (e.g. brew uninstall --force gdb).
+Steps
+
+如下是在 Mojave 上 GDB Debugger 安装使用踩坑后，最终成功的步骤总结。
+
+Please strictly follow these steps. This procedure is what finally works or me. Major reference is Permission Darwin | GDB Wiki 1 and 49001329 | Stackoverflow 2.
+
+Turn off System Intergrity (Debugging Component)
+
+Shut down your Mac. Turn it on again, hold cmd + R when booting up, until  logo shows up. You should now be booting into Recovery Mode.
+Select a language and enter the Recovery Mode UI. In the Menu, select “Utilities” →
+→ “Terminal” to open a terminal.
+Run the command csrutil enable --without debug. It won’t turn off system integrity protection entirely, only the Debugging Restriction component is turned off. This should be enough.
+Reboot normally.
+Check csrutil status in your terminal to see if the Debugging Restriction component is “Disabled”.
+Create Codesign Certificate
+
+Open Keychain Access app.
+Make sure there aren’t any GDB-related certificates. If you tried some steps before and left some previous (unsuccessful) certificates & keys in login / System keychain, delete them all, then cmd + Q to quit Keychain Access app and reopen for a refresh.
+In the Menu, select “Keychain Access” →
+→ “Certificate Assistant” →
+→ “Create a certificate…”.
+Name the certificate gdb-cert, set Identity Type to be “Self Signed Root” (default), and set Certificate Type to be “Code Signing”. Check “Let me override defaults”, then click continue until “Specify a Location For The Certificate” screen.
+(Though saving the certificate into System may succeed sometimes, it would probably trigger “Unknown Error: -214,…” error. So here we save it into login, then drag into System) Do NOT change this option to “System” as suggested in 1. Instead, leave it as “login”. Click continue to create the certificate.
+cmd + Q to quit Keychain Access app and reopen for a refresh.
+You may now find the certificate gdb-cert in login keychains. Right-click System keychain →
+→ “Unlock …” to unlock it. (Now the lock icon should be unlocked) Enter login keychain, drag the gdb-cert certificate (NOT the keys!) into System in GUI. The certificate should now be correctly placed in System keychain. cmd + Q to quit Keychain Access app.
+Reopen Keychain Access app, double-click the gdb-cert certificate →
+→ click out Trust section →
+→ set Code Signing to “Always Trust”. Save and cmd + Q to quit Keychain Access app.
+Use security find-certificate -c gdb-cert | grep System.keychain to check whether a correct “System.keychain” exists.
+Use security find-certificate -p -c gdb-cert | openssl x509 -checkend 0 to check that it will not expire.
+Check security dump-trust-settings -d to see if the trust info of your certificate is set.

@@ -1,0 +1,55 @@
+* 我眼中的虚函数3(类,继承,接口)
+** 先讨论一个小问题,
+***  为什么构建子类的时候会调用基类构造函数
+#+BEGIN_SRC c++
+#include <iostream>
+using namespace std;
+class A{
+public:
+  A(){cout<<"A::A()"<<endl;}
+  virtual ~A(){cout<<"A::~A()"<<endl;}
+};
+class B: public A{
+public:
+  B(){cout<<"B::B()"<<endl;}
+  B(int a){cout<<"B::B()"<<endl;}
+  virtual ~B(){cout<<"B::~B()"<<endl;}
+};
+int main(){
+  B *pb = new B;
+  return 0;
+};
+#+END_SRC
+打印结果:
+#+BEGIN_SRC c++
+A::A()
+B::B()
+A::A()
+B::B()
+#+END_SRC
+为什么是这样,其实是编译器再B构造函数中插入了A的构造函数.不管是在默认的构造函数函数在自定义的构造函数中类似这样
+#+BEGIN_SRC c++
+B::B(){
+A::A();
+cout<<"B::B()"<<endl;
+}
+#+END_SRC
+不信?可以看看可能汇编代码
+#+BEGIN_SRC assembly
+LC0:
+	.ascii "A::A()\0"
+...
+__ZN1AC2Ev:
+	movl	$LC0, 4(%esp)
+	movl	$__ZSt4cout, (%esp)
+...
+LC2:
+	.ascii "B::B()\0"
+...
+__ZN1BC1Ev:
+	call	__ZN1AC2Ev
+	movl	$LC2, 4(%esp)
+	movl	$__ZSt4cout, (%esp)
+...
+#+END_SRC
+大概的猜到函数B::B的汇编call了一个__ZN1AC2Ev而这个label 刚好就是A::A函数的实现.有兴趣可以自己动手试试:g++ -S xx.cpp

@@ -135,6 +135,90 @@ $2 = {0x401820 <A::f1()>, 0x401988 <B::f2()>, 0x401a40 <B::~B()>}
 ** 继承 
 这里暂时讲讲继承对虚函数的影响以及虚继承
 *** 单继承
-    通过上面的例子可以看出单继承的时候子类的虚表指针指向一张虚表，这张虚表包含父类所有的虚函数地址，然后用对应子类重写的虚函数替换掉，虚析构函数有点特殊
+    通过上面的例子可以看出单继承的时候子类的虚表指针指向一张虚表，这张虚表包含父类所有的虚函数地址，然后用对应子类重写的虚函数替换掉，是的虚析构函数有点特殊
 *** 多重继承
+    多重继承最常见的问题就是二义性，和菱形继承什么是二义性，所谓的二义性就是多个基类里面有相同的函数，在子类对象调用的时候，编译器区分不出到底调用的是哪个函数，看下面代码
+#+BEGIN_SRC c++
+namespace nv{
+  class A{
+  public:
+    void f1(){cout<<"A::f1"<<endl;}
+  };
 
+  class B{
+  public:
+    void f1(){cout<<"B::f2"<<endl;}
+  };
+  class C: public A,public B{
+  };
+}
+int main(){
+  nv::C *pc = new nv::C;
+  pc->f1();
+  return 0;
+};
+#+END_SRC
+基类A 和 B都有函数f1,C继承了两份f1代码，在函数调用的时候编译器不知道到底使用哪个函数，解决办法可以在调用的时候指定具体的函数比如这样
+#+BEGIN_SRC c++
+pc->A::f1();
+#+END_SRC
+还有一个办法是使用using,这样也能解决二义性问题
+#+BEGIN_SRC c++
+  class C: public A,public B{
+  public:
+  using A::f1;
+  };
+#+END_SRC
+using的做法相当于是在C中用A::f1遮挡住B::f1,这样在编译器在C中是看不到B::f1的，调用f1的时候顺理成章使用了A::f1,那么如果C要同时使用A 和B的f1 怎么办呢?老老实实用第一种办法吧
+上面是普通成员函数在多重继承中的情况，那么虚函数在在多重继承中又会是什么样的情况呢。
+#+BEGIN_SRC c++
+  class A{
+  public:
+    virtual void f1(){cout<<"A::f1"<<endl;}
+
+  };
+
+  class B{
+  public:
+    virtual void f1(){cout<<"B::f2"<<endl;}
+  };
+  class C: public A,public B{
+  };
+  int main(){
+    C *pc = new C;
+    pc->f1();
+    pc->B::f1();
+    return 0;
+  };
+
+#+END_SRC
+同样我们遭遇了编译器的错误警告，解决办法同普通函数一样.
+下面来看看在多重继承的情况下虚表长什么样的呢。
+#+BEGIN_SRC c++
+class A{
+public:
+  virtual void af1(){cout<<"A::af1"<<endl;}
+  virtual void af2(){cout<<"A::af2"<<endl;}
+};
+
+class B{
+public:
+  virtual void bf1(){cout<<"B::bf2"<<endl;}
+  virtual void bf2(){cout<<"B::bf2"<<endl;}
+};
+class C: public A,public B{
+};
+int main(){
+  v::C *pc = new v::C;
+  return 0;
+};
+//////
+(gdb) p *pc
+$1 = {<v::A> = {_vptr.A = 0x4030cc <vtable for v::C+8>}, <v::B> = {
+    _vptr.B = 0x4030dc <vtable for v::C+24>}, <No data fields>}
+(gdb) p /a *(void**)0x4030cc@2
+$2 = {0x4017b0 <v::A::af1()>, 0x4017e0 <v::A::af2()>}
+(gdb) p /a *(void**)0x4030dc@2
+$3 = {0x401820 <v::B::bf1()>, 0x401850 <v::B::bf2()>}
+#+END_SRC
+在不重载函数的时候子类会有两个虚表指针分别指向父类(_vptr.A,_vptr.B)

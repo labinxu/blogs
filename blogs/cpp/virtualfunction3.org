@@ -35,7 +35,7 @@ cout<<"B::B()"<<endl;
 }
 #+END_SRC
 不信?可以看看可能汇编代码
-#+BEGIN_SRC assembly
+#+BEGIN_SRC c++
 LC0:
 	.ascii "A::A()\0"
 ...
@@ -52,7 +52,89 @@ __ZN1BC1Ev:
 	movl	$__ZSt4cout, (%esp)
 ...
 #+END_SRC
-大概的猜到函数B::B的汇编call了一个__ZN1AC2Ev而这个label 刚好就是A::A函数的实现.有兴趣可以自己动手试试:g++ -S xx.cpp。同理，析构函数也是这样实现的。这里补充一下虚虚构函数在虚表里面的表现。接上面代码,A有一个虚构函数，B也有一个虚析构函数函数在虚函数表中会不会有存在两个析构函数呢，
+大概的猜到函数B::B的汇编call了一个__ZN1AC2Ev而这个label 刚好就是A::A函数的实现.有兴趣可以自己动手试试:g++ -S xx.cpp。同理，析构函数也是这样实现的。这里补充一下虚虚构函数在虚表里面的表现。接上面代码,A有一个虚构函数，B也有一个虚析构函数函数在虚函数表中会不会有存在两个析构函数呢,
+#+BEGIN_SRC c++
+#include <iostream>
+using namespace std;
+class A{
+public:
+  A(){cout<<"A::A()"<<endl;}
+  virtual void f1(){cout<<"A::f1"<<endl;}
+  virtual void f2(){cout<<"A::f2"<<endl;}
+  virtual ~A(){cout<<"A::~A()"<<endl;}
+private:
+  int ma;
+};
+class B:public A{
+public:
+  B(){cout<<"B::B()"<<endl;}
+  B(int a){cout<<"B::B()"<<endl;}
+  void f2(){cout<<"B::f2"<<endl;}
+  virtual ~B(){cout<<"B::~B()"<<endl;}
+  int mb;
+};
 
+int main(){
+  B *pb = new B;
+  return 0;
+};
+#+END_SRC
 
+新添加了两个虚函f1和f2，在子类B中改写了f2,下面我们来看看虚表是什么样的
+A虚表：
+#+BEGIN_SRC c++
+Thread 1 "vf3" hit Breakpoint 1, main () at vf3.cc:22
+22        A *pa = new A;
+(gdb) n
+A::A()
+23        A *pb = new B;
+(gdb) n
+A::A()
+B::B()
+24        return 0;
+(gdb) p *pa
+$1 = {_vptr.A = 0x40309c <vtable for A+8>, ma = -2147249046}
+(gdb) p /a *(void**)0x40309c@3
+$2 = {0x401820 <A::f1()>, 0x401850 <A::f2()>, 0x401918 <A::~A()>}
+#+END_SRC
+可以看到A的虚函数按照声明顺序在虚表当中排列，再来看看B的虚表
+#+BEGIN_SRC c++
+(gdb) p *pb
+$3 = {_vptr.A = 0x4030b4 <vtable for B+8>, ma = 0}
+(gdb) p /a *(void**)0x4030b4@3
+$4 = {0x401820 <A::f1()>, 0x401988 <B::f2()>, 0x401a40 <B::~B()>}
+#+END_SRC
+同样也是按照声明顺序排列，子类重写的函数会替换掉对应的父类函数，比如f2.等等 A的虚函数呢？ 我们去掉B中的虚函数再看看
+#+BEGIN_SRC c++
+Thread 1 "vf3" hit Breakpoint 1, main () at vf3.cc:18
+18        A *pa = new A;
+(gdb) l
+13        B(int a){cout<<"B::B()"<<endl;}
+14        void f2(){cout<<"B::f2"<<endl;}
+15        //virtual ~B(){cout<<"B::~B()"<<endl;}
+16      };
+17      int main(){
+18        A *pa = new A;
+19        A *pb = new B;
+20        return 0;
+21      };
+(gdb) n
+A::A()
+19        A *pb = new B;
+(gdb) n
+A::A()
+B::B()
+20        return 0;
+(gdb) p *pb
+$1 = {_vptr.A = 0x4030ac <vtable for B+8>}
+(gdb) p /a *(void**)0x4030ac@3
+$2 = {0x401820 <A::f1()>, 0x401988 <B::f2()>, 0x401a40 <B::~B()>}
+#+END_SRC
+我去掉了子类中的虚析构函数，但是再B的虚表中依然看到了B::~B().说明编译器自动生成了这个函数。
+
+** 继承 
+这里暂时讲讲继承对虚函数的影响以及虚继承
+*** 单继承
+    通过上面的例子可以看出单继承的时候子类的虚表指针指向一张虚表，这张虚表包含父类所有的虚函数地址，然后用对应子类重写的虚函数替换掉，虚析构函数有点特殊
+*** 多重继承
 

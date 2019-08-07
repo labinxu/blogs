@@ -192,7 +192,7 @@ using的做法相当于是在C中用A::f1遮挡住B::f1,这样在编译器在C�
   };
 
 #+END_SRC
-同样我们遭遇了编译器的错误警告，解决办法同普通函数一样.
+同样遇了编译器的错误警告，解决办法同普通函数一样.
 下面来看看在多重继承的情况下虚表长什么样的呢。
 #+BEGIN_SRC c++
 class A{
@@ -221,4 +221,83 @@ $2 = {0x4017b0 <v::A::af1()>, 0x4017e0 <v::A::af2()>}
 (gdb) p /a *(void**)0x4030dc@2
 $3 = {0x401820 <v::B::bf1()>, 0x401850 <v::B::bf2()>}
 #+END_SRC
-在不重载函数的时候子类会有两个虚表指针分别指向父类(_vptr.A,_vptr.B)
+在不重载函数的时候子类会有两个虚表指针分别指向父类(_vptr.A,_vptr.B)，尝试重载基类的虚函数。
+#+BEGIN_SRC  c++
+  class A{
+  public:
+    virtual void af1(){cout<<"A::af1"<<endl;}
+    virtual void af2(){cout<<"A::af2"<<endl;}
+  };
+
+  class B{
+  public:
+    virtual void bf1(){cout<<"B::bf2"<<endl;}
+    virtual void bf2(){cout<<"B::bf2"<<endl;}
+  };
+  class C: public A,public B{
+  public:
+    void af1(){cout<<"C::af1"<<endl;}
+    void bf2(){cout<<"C::bf2"<<endl;}
+  };
+  int main(){
+    C *pc = new C;
+    pc->af1();
+    pc->bf2();
+    return 0;
+  };
+#+END_SRC
+用gdb查看虚函数表
+#+BEGIN_SRC c++
+38        C *pc = new C;
+(gdb) n
+39        pc->af1();
+(gdb) p *pc
+$1 = {<A> = {_vptr.A = 0x4030cc <vtable for C+8>}, <B> = {
+    _vptr.B = 0x4030e0 <vtable for C+28>}, <No data fields>}
+(gdb) p /a *(void**)0x4030cc@2
+$2 = {0x4018b0 <C::af1()>, 0x401800 <A::af2()>}
+(gdb) p /a *(void**)0x4030e0@2
+$4 = {0x401948 <_ZThn4_N1C3bf1Ev>, 0x401870 <B::bf2()>}
+#+END_SRC
+
+我用的是cygwin+windows10,gdb version 8.1.1 ,gcc version 7.4.0,可以看到对于继承下来A的虚表在C中函数af1的位置由C重写的函数替换，基类B的bf1函数由_ZThn4_N1C3bf1Ev(0x401948)这个函数替代，看名字是C的bf1，是不是很奇怪为什么显示和A的不一样。我们再来看看_vptr.A其他的内容
+
+#+BEGIN_SRC c++
+(gdb) p /a *(void**)0x4030cc@3
+$21 = {0x4018b0 <C::af1()>, 0x401800 <A::af2()>, 0x4018e0 <C::bf1()>}
+#+END_SRC
+在基类A虚表中找到了重写过后的C::bf1,那么在基类B的虚表中第一个函数又是什么呢，如果是同一个函数那么为什么地址确不相同，如果是两个函数 那么为什么重写会多出来一个函数。尝试分别调用一下这两个地址
+#+BEGIN_SRC c++
+  Thread 1 "vf3" hit Breakpoint 1, main () at vf3.cc:38
+  38        C *pc = new C;
+  (gdb) n
+  39        pc->af1();
+  (gdb) p *pc
+  $1 = {<A> = {_vptr.A = 0x4030d4 <vtable for C+8>}, <B> = {
+      _vptr.B = 0x4030e8 <vtable for C+28>}, <No data fields>}
+  (gdb) p /a *(void**)0x4030e8@2
+  $3 = {0x401948 <_ZThn4_N1C3bf1Ev>, 0x401870 <B::bf2()>}
+  (gdb) p /a *(void**)0x4030d4@3
+  $4 = {0x4018b0 <C::af1()>, 0x401800 <A::af2()>, 0x4018e0 <C::bf1()>}
+  (gdb) p *(void *())(0x4018e0)()
+  [New Thread 20752.0x4064]
+  [New Thread 20752.0xaa0]
+  C::bf1
+  (gdb) p *(void *())(0x401948)()
+  C::bf1
+  (gdb)
+#+END_SRC
+从打印可以看出这两货是同一个，怎么可能呢，没办法只能拿出终极手段，看汇编
+#+BEGIN_SRC c++
+(gdb) p *pc
+$5 = {<A> = {_vptr.A = 0x4030d4 <vtable for C+8>}, <B> = {
+    _vptr.B = 0x4030e8 <vtable for C+28>}, <No data fields>}
+(gdb) p *(void**)0x4030d4@3
+$6 = {0x4018b0 <C::af1()>, 0x401800 <A::af2()>, 0x4018e0 <C::bf1()>}
+(gdb) disas pc->bf1
+Dump of assembler code for function C::bf1():
+   0x004018e0 <+0>:     push   ebp
+#+END_SRC
+汇编显示指针调用重写过的虚函数后，调用的是A虚表里面的函数，说明重写的虚函数被放进了第一个基类的虚表.第二个虚表里面的函数呢？忘了它把。我暂时没找到合理的解释为什么g++会将第二个虚表会变成这样。
+
+

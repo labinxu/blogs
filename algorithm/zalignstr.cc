@@ -16,7 +16,7 @@ public:
     int y = 0;
     int x = 0;
     vector<vector<char>> sret(numRows);
-    
+
     for(int i=0; i<len; ++i){
       if(x==0){
         sret[y++].push_back(s[i]);

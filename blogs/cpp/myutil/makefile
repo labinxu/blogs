@@ -2,14 +2,18 @@
 #export CXX=/opt/local/bin/g++
 CC = gcc
 CXX =g++
-LD = g++
+LD = gcc
 INC=-I/usr/local/include -I/opt/local/include
 LIBDIR=-L/usr/local/lib -L/opt/local/lib
+
+#INC=-L/root/wks/blogs/googletest/googletest/include
+#LIBDIR=-L/root/wks/blogs/googletest/build/lib
+
 #CXXLIB=libgtest.a
 TARGET = test
 
 CFLAGS=-Wall -c -Werror -g -std=gnu11 -Wextra  -fsanitize=address -fsanitize-recover=address
-CXXFLAGS=-Wall -c -Werror -g -Wextra  -fsanitize=address -fsanitize-recover=address
+CXXFLAGS=-Wall -c -Werror -std=c++11 -g -Wextra  -fsanitize=address -fsanitize-recover=address
 SRCS = $(wildcard *.c)
 OBJS = $(patsubst %.c, %.o, $(SRCS))
 
@@ -21,8 +25,9 @@ CPPOBJS = $(patsubst %cc, %o, $(CPPSRCS))
 
 all: $(TARGET)
 
+## gtest pthread must put behind target
 $(TARGET): $(OBJS) $(CPPOBJS)
-	$(CXX) $(LIBDIR) -lgtest -lpthread -o $@ $^ -fsanitize=address -g1
+	$(CXX) -o $@ $^ -fsanitize=address -g1 $(LIBDIR) -lgtest -lpthread
 
 %.o:%.c
 	$(CC) $(CFLAGS) $^

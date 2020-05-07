@@ -5,10 +5,16 @@
 
 void free_node(Node*n){
   if(n){
+    free(n);
+  }
+}
+void free_node_with_data(Node *n){
+  if(n){
     if(n->data)
       free(n->data);
     free(n);
   }
+
 }
 
 Node *create_node(void *data){
@@ -18,7 +24,7 @@ Node *create_node(void *data){
   return node;
 }
 
-Node *find(List*l, Node *value, compare comp){
+Node *list_find(List*l, Node *value, compare comp){
 
   Node*tmpn = l->head;
   while(tmpn){
@@ -31,7 +37,6 @@ Node *find(List*l, Node *value, compare comp){
 }
 ////////// USER CODE//////////
 
-/////
 List create_list(){
   List l;
   memset(&l,0, sizeof(List));
@@ -55,8 +60,16 @@ void free_list(List *l){
     free_node(tmp);
   }
 }
-
-void list_push_back(List *l, Node *node){
+void free_list_with_data(List *l){
+  Node tmpnode;
+  tmpnode.next=l->head;
+  while(tmpnode.next != NULL){
+    Node *tmp=tmpnode.next;
+    tmpnode.next = tmpnode.next->next;
+    free_node_with_data(tmp);
+  }
+}
+void* list_push_back(List *l, Node *node){
   Node tmphead;
   memset(&tmphead,0,sizeof(Node));
   tmphead.next=l->head;
@@ -67,6 +80,7 @@ void list_push_back(List *l, Node *node){
   }
   tmpnode->next=node;
   l->head=tmphead.next;
+  return node;
 }
 
 void list_push_front(List*l, Node *node){

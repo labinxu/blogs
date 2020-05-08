@@ -3,26 +3,6 @@
 #include<string.h>
 #include "list.h"
 
-void free_node(Node*n){
-  if(n){
-    free(n);
-  }
-}
-void free_node_with_data(Node *n){
-  if(n){
-    if(n->data)
-      free(n->data);
-    free(n);
-  }
-
-}
-
-Node *create_node(void *data){
-  Node *node =  (Node*)malloc(sizeof(Node));
-  memset(node, 0, sizeof(Node));
-  node->data=data;
-  return node;
-}
 
 Node *list_find(List*l, Node *value, compare comp){
 
@@ -66,11 +46,13 @@ void free_list_with_data(List *l){
   while(tmpnode.next != NULL){
     Node *tmp=tmpnode.next;
     tmpnode.next = tmpnode.next->next;
-    free_node_with_data(tmp);
+    free_node(tmp);
   }
 }
-void* list_push_back(List *l, Node *node){
+void *list_push_back(List *l,void *d, size_t size )
+{
   Node tmphead;
+  Node *node = make_node(d, size);
   memset(&tmphead,0,sizeof(Node));
   tmphead.next=l->head;
   Node *tmpnode=&tmphead;
@@ -80,14 +62,65 @@ void* list_push_back(List *l, Node *node){
   }
   tmpnode->next=node;
   l->head=tmphead.next;
-  return node;
-}
+  return tmpnode->next;
 
-void list_push_front(List*l, Node *node){
+}
+/* void* list_push_back(List *l, Node *node){ */
+/*   Node tmphead; */
+/*   memset(&tmphead,0,sizeof(Node)); */
+/*   tmphead.next=l->head; */
+/*   Node *tmpnode=&tmphead; */
+
+/*   while(tmpnode->next != NULL){ */
+/*     tmpnode=tmpnode->next; */
+/*   } */
+/*   tmpnode->next=node; */
+/*   l->head=tmphead.next; */
+/*   return node; */
+/* } */
+
+void* list_push_front(List*l, Node *node){
   node->next=l->head;
   l->head=node;
   l->head->next=NULL;
+  return node;
 }
+
+List list_reverse(List *l){
+  Node *pre=NULL;
+  Node *next=NULL;
+  Node *head = l->head;
+  while(head){
+    next = head->next;
+    head->next=pre;
+    pre=head;
+    head = next;
+  }
+  l->head = pre;
+  return *l;
+}
+
+void list_remove(List *l, void *data, compare comp){
+
+  Node* tmpn=(Node*)malloc(sizeof(Node));
+  memset(tmpn,0,sizeof(Node));
+  tmpn->next = l->head;
+  l->head = tmpn;
+  Node *n = tmpn->next;
+  Node *pre = tmpn;
+  while(n){
+    if(comp(data, n->data)==0){
+      pre->next = n->next;
+      free_node(n);
+      break;
+    }
+    pre = n;
+    n = n->next;
+  }
+  l->head = l->head->next;
+  free_node(tmpn);
+}
+
 int list_size(List *l){
   int i=0;
   Node* iter=l->head;

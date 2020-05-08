@@ -1,10 +1,12 @@
 extern"C"{
 #include "svc.h"
 #include "list.h"
+#include "types.h"
 }
 #include<string>
 #include <gtest/gtest.h>
 #include<string.h>
+#include <string>
 
 typedef struct Student_t{
   char name[10];
@@ -25,6 +27,15 @@ extern "C" Student* create_student(const char*name,int age, int weight,int high)
   s->weight=weight;
   return s;
 }
+Node *make_student_node(const char *name , int age, int weight, int high){
+  Student s;
+  strcpy(s.name,name);
+  s.age=age;
+  s.high=high;
+  s.weight=weight;
+  return make_node(&s,sizeof(Student));
+}
+
 extern "C" void free_student(Student *s){
   if(s)
     free(s);
@@ -44,37 +55,101 @@ TEST(test, TEST_CREATE_NODE){
     char *data=(char*)malloc(12);
     memset(data,0,12);
     strcpy(data,"hello world");
-    Node *node = create_node(data);
+    Node *node = make_node(data,12);
     EXPECT_EQ(strcmp("hello world",(char*)node->data),0);
-    free_node_with_data(node);
+    free_node(node);
+    free(data);
 }
 
-TEST(test, TEST_SVC_INIT){
-    void *helper = svc_init();
-    cleanup(helper);
- }
-
-
-TEST(test, TEST_SVC_ADD1){
-   void *helper = svc_init();
-   int a = svc_add(helper,(char*)"hello.py");
-   EXPECT_EQ(a, -2);
-   a = svc_add(helper, (char*)"unittest/hello.py");
-   EXPECT_NE(2,a);
-   a = svc_add(helper, (char*)"unittest/hello.py");
-   EXPECT_EQ(-2,a);
-
-   cleanup(helper);
+TEST(test ,TEST_MAKE_FILEINFO){
+  FileInfo fi;
+  strcpy(fi.filename, "firstfile.py");
+  Node *node = make_node(&fi,sizeof(FileInfo));
+  free_node(node);
 }
 
-TEST(test, TEST_SVC_COMMIT1){
-  void *helper = svc_init();
-  int a = svc_add(helper, (char*)"unittest/hello.py");
-  EXPECT_NE(2,a);
-  //svc_commit();
+TEST(test ,TEST_MAKE_FILE){
+  File file;
+  strcpy(file.name, "firstfile.py");
+  List l = create_list();
+  list_push_back(&l, &file, sizeof(File));
+  EXPECT_EQ(list_size(&l),1);
 
-  cleanup(helper);
+  free_list(&l);
 }
+
+TEST(test ,TEST_LIST_1){
+  FileInfo fi;
+  strcpy(fi.filename, "firstfile.py");
+  List l = create_list();
+  EXPECT_EQ(0,list_size(&l));
+  list_push_back(&l,&fi, sizeof(FileInfo));
+  EXPECT_EQ(1,list_size(&l));
+  free_list(&l);
+}
+
+TEST(test ,TEST_LIST_2){
+  List l = create_list();
+
+  FileInfo fi;
+  memset(&fi, 0, sizeof(FileInfo));
+  strcpy(fi.filename, "firstfile.py");
+
+  list_push_back(&l,&fi, sizeof(FileInfo));
+  FileInfo fi2;
+  memset(&fi2, 0, sizeof(FileInfo));
+  strcpy(fi2.filename, "firstfile2.py");
+  list_push_back(&l,&fi2, sizeof(FileInfo));
+
+  EXPECT_EQ(2,list_size(&l));
+
+  Node* tmpnode =make_node(&fi2,sizeof(fi2));
+  auto comp = [](const void *a,const void *b)->int{
+                return strcmp(((FileInfo*)a)->filename, ((FileInfo*)b)->filename);
+                 };
+  Node* it = list_find(&l,tmpnode,comp);
+
+  EXPECT_EQ( strcmp( ((FileInfo*)(tmpnode->data))->filename, "firstfile2.py"),0);
+  l=list_reverse(&l);
+  EXPECT_EQ( strcmp( ((FileInfo*)(l.head->data))->filename, "firstfile2.py"),0);
+
+  l=list_reverse(&l);
+  EXPECT_EQ( strcmp( ((FileInfo*)(l.head->data))->filename, "firstfile.py"),0);
+  free_node(tmpnode);
+
+  list_remove(&l, &fi, comp );
+  EXPECT_EQ(list_size(&l), 1);
+  EXPECT_EQ( strcmp( ((FileInfo*)(l.head->data))->filename, "firstfile2.py"),0);
+
+  free_list(&l);
+}
+
+// TEST(test, TEST_SVC_INIT){
+//     void *helper = svc_init();
+//     cleanup(helper);
+//  }
+
+
+// TEST(test, TEST_SVC_ADD1){
+//    void *helper = svc_init();
+//    int a = svc_add(helper,(char*)"hello.py");
+//    EXPECT_EQ(a, -2);
+//    a = svc_add(helper, (char*)"unittest/hello.py");
+//    EXPECT_NE(2,a);
+//    a = svc_add(helper, (char*)"unittest/hello.py");
+//    EXPECT_EQ(-2,a);
+
+//    cleanup(helper);
+// }
+
+// TEST(test, TEST_SVC_COMMIT1){
+//   void *helper = svc_init();
+//   int a = svc_add(helper, (char*)"unittest/hello.py");
+//   EXPECT_NE(2,a);
+//   //svc_commit();
+
+//   cleanup(helper);
+// }
 
 // int _main(){
 //   List l = create_list();

@@ -10,18 +10,8 @@
 #include <errno.h>
 #include "list.h"
 #include "svc.h"
+#include "types.h"
 
-#define FILE_NAME_MAX_LEN 53
-#define BRANCH_NAME_MAX_LEN 20
-#define COMMIT_ID_MAX_LEN 7
-
-
-typedef enum ChangeType{e_add=1,e_modified,e_deleted} ChangeType;
-
-typedef struct FileInfo{
-  char filename[FILE_NAME_MAX_LEN];
-  int hash;
-} FileInfo;
 
 FileInfo *create_fileinfo(void *helper, char *filename){
   FileInfo *fi=(FileInfo*)malloc(sizeof(FileInfo));
@@ -31,16 +21,17 @@ FileInfo *create_fileinfo(void *helper, char *filename){
   fi->hash = hash_file(helper, filename);
   return fi;
 }
+
 void free_FileInfo(FileInfo *fi){
   if(fi)
     free(fi);
 }
-typedef struct Change
-{
-  ChangeType changeType;
-  char fileName[FILE_NAME_MAX_LEN];
-  char *details;
-} Change;
+
+Node *make_fileinfo_node(char *filename){
+  FileInfo fi;
+  strcpy(fi.filename,filename);
+  return make_node(&fi, sizeof(FileInfo));
+}
 
 Change* create_change(ChangeType ct,char *filename, char*comments){
   Change *pCh = (Change*)malloc(sizeof(Change));
@@ -184,9 +175,8 @@ Branch *create_branch(void *helper, char *branchname){
   Branch *pBranch = (Branch*)malloc(sizeof(Branch));
   memset(pBranch, 0, sizeof(Branch));
   strncpy(pBranch->name, branchname, BRANCH_NAME_MAX_LEN);
-  Node *node=create_node(pBranch);
   Helper *tmphelper = (Helper*)helper;
-  list_push_back(&(tmphelper->branches), node);
+  list_push_back(&(tmphelper->branches), pBranch, sizeof(Branch));
   return pBranch;
 }
 
@@ -252,9 +242,6 @@ int svc_add(void *helper, char *file_name)
   tmpn.data=file_name;
   Node* node = list_find(&(pbranch->tracked),&tmpn,is_tracked);
   if(node == NULL){
-    Change *chg=create_change(e_add, file_name, NULL);
-    list_push_back(&(pbranch->tracked), create_node(fileinfo));
-    list_push_back(&(pHelper->changes), create_node(chg));
   }
   else{
     free_FileInfo(fileinfo);

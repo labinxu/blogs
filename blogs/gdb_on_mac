@@ -1,0 +1,31 @@
+(Mac OS X 10.14 and later) Create a gdb-entitlement.xml file containing the following:
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.cs.debugger</key>
+    <true/>
+</dict>
+</plist>
+</pre>
+If the certificate you generated in the previous section is known as gdb-cert, use:
+codesign --entitlements gdb-entitlement.xml -fs gdb-cert $(which gdb)
+or before Mojave (10.14), just
+codesign -fs gdb-cert $(which gdb)
+💡 You may have to prepend this command with sudo if the gdb binary is located in a place that is not writable by regular users.
+
+If you plan to build gdb frequently, this step can be automated by passing --enable-codesign=gdb-cert (assuming, again, that gdb-cert is the name of the certificate) to configure.
+
+Control: in the terminal type
+
+codesign -vv $(which gdb)
+And for 10.14 (Mojave) onwards, also check the entitlements:
+
+codesign -d --entitlements - $(which gdb)
+1.4. Refresh the system's certificates and code-signing data
+
+The most reliable way is to reboot your system.
+
+A less invasive way is to and restart taskgated service by killing the current running taskgated process (at any time in the process, but no later than before trying to run gdb again):
+
+sudo killall taskgated

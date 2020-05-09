@@ -35,5 +35,8 @@ $(TARGET): $(OBJS) $(CPPOBJS)
 %.o:%.cc
 	$(CXX) $(INC) $(CPPFLAGS) -c -g $^
 
+run:
+	./$(TARGET)
+
 clean:
 	rm -f $(OBJS) $(CPPOBJS) $(TARGET)

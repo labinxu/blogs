@@ -2,6 +2,7 @@ extern"C"{
 #include "svc.h"
 #include "list.h"
 #include "types.h"
+#include "vector.h"
 }
 #include<string>
 #include <gtest/gtest.h>
@@ -40,7 +41,19 @@ extern "C" void free_student(Student *s){
   if(s)
     free(s);
 }
+TEST(test, TEST_ARRAY_1){
+  vector v = create_vector(10);
+  vector_free(&v);
 
+  vector vv = create_vector(10);
+  char*p=(char*)malloc(sizeof(char)*20);
+  strcpy(p, "hello world");
+  vector_push_back(&vv, p);
+  int ret = strcmp((char*)vector_at(&vv,0), "hello world");
+  EXPECT_EQ(ret,0);
+
+  vector_free(&vv);
+}
 // TEST(test, TEST_PUSH_BACK_SIZE){
 //   List l = create_list();
 //   EXPECT_EQ(0,list_size(&l));
@@ -87,6 +100,9 @@ TEST(test ,TEST_LIST_1){
   EXPECT_EQ(1,list_size(&l));
   free_list(&l);
 }
+int comparefile(const void*a, const void*b){
+  return strcmp(((FileInfo*)a)->filename, ((FileInfo*)b)->filename);
+}
 
 TEST(test ,TEST_LIST_2){
   List l = create_list();
@@ -104,11 +120,10 @@ TEST(test ,TEST_LIST_2){
   EXPECT_EQ(2,list_size(&l));
 
   Node* tmpnode =make_node(&fi2,sizeof(fi2));
-  auto comp = [](const void *a,const void *b)->int{
-                return strcmp(((FileInfo*)a)->filename, ((FileInfo*)b)->filename);
-                 };
-  Node* it = list_find(&l,tmpnode,comp);
+ 
+  Node* it = list_find(&l,tmpnode,comparefile);
 
+  EXPECT_NE(it,nullptr);
   EXPECT_EQ( strcmp( ((FileInfo*)(tmpnode->data))->filename, "firstfile2.py"),0);
   l=list_reverse(&l);
   EXPECT_EQ( strcmp( ((FileInfo*)(l.head->data))->filename, "firstfile2.py"),0);
@@ -117,11 +132,47 @@ TEST(test ,TEST_LIST_2){
   EXPECT_EQ( strcmp( ((FileInfo*)(l.head->data))->filename, "firstfile.py"),0);
   free_node(tmpnode);
 
-  list_remove(&l, &fi, comp );
+  list_remove(&l, &fi, comparefile);
   EXPECT_EQ(list_size(&l), 1);
   EXPECT_EQ( strcmp( ((FileInfo*)(l.head->data))->filename, "firstfile2.py"),0);
 
   free_list(&l);
+}
+TEST(test, TEST_LIST_3){
+  List l = create_list();
+  FileInfo fi;
+  memset(&fi, 0, sizeof(FileInfo));
+  strcpy(fi.filename, "firstfile.py");
+
+  list_push_back(&l,&fi, sizeof(FileInfo));
+  FileInfo fi2;
+  memset(&fi2, 0, sizeof(FileInfo));
+  strcpy(fi2.filename, "firstfile2.py");
+  list_push_back(&l,&fi2, sizeof(FileInfo));
+  EXPECT_EQ(2,list_size(&l));
+
+  FileInfo fi3;
+  memset(&fi3, 0, sizeof(FileInfo));
+  strcpy(fi3.filename, "firstfile3.py");
+
+  Node* tmpnode =make_node(&fi,sizeof(fi));
+  Node* it = list_find(&l,tmpnode,comparefile);
+  if(it){
+    Node *newnode = make_node(&fi3,sizeof(FileInfo));
+    newnode->next=it->next;
+    it->next=newnode;
+    EXPECT_EQ(3, list_size(&l));
+  }
+  it = l.head;
+  EXPECT_EQ(0, strcmp((char*)it->data,"firstfile.py"));
+  it = list_next(it);
+  EXPECT_EQ(0, strcmp((char*)it->data,"firstfile3.py"));
+  it = list_next(it);
+  EXPECT_EQ(0, strcmp((char*)it->data,"firstfile2.py"));
+
+  free_node(tmpnode);
+  free_list(&l);
+
 }
 
 // TEST(test, TEST_SVC_INIT){

@@ -27,7 +27,7 @@ Node* begin(List*l){
   return l->head;
 }
 
-Node*next(Node*v){
+Node*list_next(Node*v){
   return v->next;
 }
 
@@ -126,7 +126,7 @@ int list_size(List *l){
   Node* iter=l->head;
   while(iter){
     i++;
-    iter=next(iter);
+    iter=list_next(iter);
   }
   return i;
 }

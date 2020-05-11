@@ -41,18 +41,100 @@ extern "C" void free_student(Student *s){
   if(s)
     free(s);
 }
-TEST(test, TEST_ARRAY_1){
-  vector v = create_vector(10);
+TEST(test, TEST_VECTOR_MAKE_0){
+  vector v=make_vector(sizeof(Student),1);
+  Student s1;
+  strcpy(s1.name,"boy1");
+  s1.weight=100;
+  s1.high = 120;
+  s1.age = 11;
+  vector_push_back(&v,&s1);
+  EXPECT_EQ(vector_size(&v),1);
+  Student s2;
+  strcpy(s2.name,"boy2");
+  s2.weight=100;
+  s2.high = 120;
+  s2.age = 11;
+  vector_push_back(&v,&s2);
+  EXPECT_EQ(vector_size(&v),2);
+  auto ss = (Student*)vector_at(&v,0);
+  EXPECT_EQ(strcmp(ss->name,"boy1"),0);
+
+  Student *ps = (Student*)vector_at(&v,1);
+  EXPECT_EQ(strcmp(ps->name,"boy2"),0);
+
+  Student s3;
+  strcpy(s3.name,"boy3");
+  s3.weight=100;
+  s3.high = 120;
+  s3.age = 11;
+  vector_push_back(&v,&s3);
+  EXPECT_EQ(vector_size(&v),3);
+  Student *ps3 = (Student*)vector_at(&v,2);
+  EXPECT_EQ(strcmp(ps3->name,"boy3"),0);
+
+  Student s4;
+  strcpy(s4.name,"boy4");
+  s4.weight=100;
+  s4.high = 120;
+  s4.age = 11;
+  vector_push_back(&v,&s4);
+  EXPECT_EQ(vector_size(&v),4);
+
+  Student *ps4 = (Student*)vector_at(&v,3);
+  EXPECT_EQ(strcmp(ps4->name,"boy4"),0);
+
+  Student s5;
+  strcpy(s5.name,"boy5");
+  s5.weight=100;
+  s5.high = 120;
+  s5.age = 11;
+  vector_push_back(&v,&s5);
+  EXPECT_EQ(vector_size(&v),5);
+
+  Student *ps5 = (Student*)vector_at(&v,4);
+  EXPECT_EQ(strcmp(ps5->name,"boy5"),0);
+
+  EXPECT_EQ(v.capbility , 8);
+  EXPECT_EQ(v.iter, 5);
+
+  // crack ps4 ,realloc
+  Student *pf = (Student*)vector_find(&v, ps5, is_same_student);
+  EXPECT_EQ(strcmp(pf->name,"boy5"),0);
+
+  Student *pn = (Student*)vector_remove(&v,0);
+  EXPECT_EQ(strcmp(pn->name,"boy2"),0);
+  EXPECT_EQ(vector_size(&v),4);
+
+  pn = (Student*)vector_remove(&v,0);
+  EXPECT_EQ(strcmp(pn->name,"boy3"),0);
+  EXPECT_EQ(vector_size(&v),3);
+
+  pn = (Student*)vector_remove(&v,0);
+  EXPECT_EQ(strcmp(pn->name,"boy4"),0);
+  EXPECT_EQ(vector_size(&v),2);
+
+  pn = (Student*)vector_remove(&v,0);
+  EXPECT_EQ(strcmp(pn->name,"boy5"),0);
+  EXPECT_EQ(vector_size(&v),1);
+  pn = (Student*)vector_remove(&v,0);
+  EXPECT_EQ(strcmp(pn->name,"boy5"),-1);
+  EXPECT_EQ(vector_size(&v),0);
+
   vector_free(&v);
+}
 
-  vector vv = create_vector(10);
-  char*p=(char*)malloc(sizeof(char)*20);
-  strcpy(p, "hello world");
-  vector_push_back(&vv, p);
-  int ret = strcmp((char*)vector_at(&vv,0), "hello world");
-  EXPECT_EQ(ret,0);
+TEST(test, TEST_ARRAY_1){
+  // vector v = create_vector();
+  // vector_free(&v);
 
-  vector_free(&vv);
+  // vector vv = create_vector(10);
+  // char*p=(char*)malloc(sizeof(char)*20);
+  // strcpy(p, "hello world");
+  // vector_push_back(&vv, p);
+  // int ret = strcmp((char*)vector_at(&vv,0), "hello world");
+  // EXPECT_EQ(ret,0);
+  // vector_free(&vv);
 }
 // TEST(test, TEST_PUSH_BACK_SIZE){
 //   List l = create_list();

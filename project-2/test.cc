@@ -39,7 +39,7 @@ extern "C" void free_student(Student *s){
   if(s)
     free(s);
 }
- 
+
 TEST(test, TEST_CREATE_NODE){
     char *data=(char*)malloc(12);
     memset(data,0,12);
@@ -50,14 +50,20 @@ TEST(test, TEST_CREATE_NODE){
     free(data);
 }
 
-int comparefile(const void*a, const void*b){
-  return 0;
-}
 
 TEST(test, TEST_INIT_PROCESS){
   List procs=init_processes((char*)"process.txt",4);
-  //
+
+  list_sort(&procs, process_sort);
+  // it=list_begin(&procs);
+  // while(it){
+  //   Process *p=(Process*)it->data;
+  //   printf("%d,%d,%d,%d\n", p->arrived_time,p->pid,p->memory,p->jobtime);
+  //   it=it->next;
+  // }
+
   free_list(&procs);
+  
 }
 
 int main(int argc, char **argv) {

@@ -8,6 +8,8 @@
 #define log(...) printf (__VA_ARGS__)
 #define info(args...) printf("INFO:");printf(args);
 
+typedef int (*compare)(const void *, const void *);
+
 
 /// List
 typedef struct List_t{

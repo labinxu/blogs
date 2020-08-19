@@ -23,7 +23,7 @@ List create_list(){
   return l;
 };
 
-Node* list_begin(List*l){
+Node* begin(List*l){
   return l->head;
 }
 
@@ -38,9 +38,7 @@ void free_list(List *l){
     Node *tmp=tmpnode.next;
     tmpnode.next = tmpnode.next->next;
     free_node(tmp);
-    //free_node_with_data(tmp);
   }
-
 }
 void free_list_with_data(List *l){
   Node tmpnode;
@@ -53,10 +51,8 @@ void free_list_with_data(List *l){
 }
 void *list_push_back(List *l,void *d, size_t size )
 {
-
-  Node *node = make_node(d, size);
-  //printf("make node %p \n", node->data);
   Node tmphead;
+  Node *node = make_node(d, size);
   memset(&tmphead,0,sizeof(Node));
   tmphead.next=l->head;
   Node *tmpnode=&tmphead;
@@ -105,19 +101,8 @@ List list_reverse(List *l){
 }
 
 void list_sort(List*l, compare comp){
-  Node *it1 = list_begin(l);
-  while(it1){
-    Node *it2=it1->next;
-    while(it2){
-      if(comp(it1->data,it2->data)){
-        void *d1 = it1->data;
-        it1->data = it2->data;
-        it2->data = d1;
-      }
-      it2 = it2->next;
-    }
-    it1 = it1->next;
-  }
+  (void)l;
+  (void)comp;
 }
 
 

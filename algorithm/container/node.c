@@ -17,10 +17,8 @@ void free_node_without_data(Node*n){
 
 void free_node(Node *n){
   if(n){
-    if(n->data){
-      //printf("free %p\n",n->data);
+    if(n->data)
       free(n->data);
-    }
     free(n);
   }
 

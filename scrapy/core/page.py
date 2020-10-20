@@ -34,7 +34,7 @@ class Page():
         self.status_code = None
         #import pdb;pdb.set_trace()
 
-    def addHeaders(self, headers):
+    def updateHeaders(self, headers):
         self.session.headers.update(headers)
 
     def setHeaders(self, headers):

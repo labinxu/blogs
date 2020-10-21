@@ -10,9 +10,10 @@ class AbcMartPage(login.Login):
     def __init__(self):
         super().__init__()
         
-        
     def login(self, loginpage, playdata=None):
+        
         resp = self.postSoup(loginpage, data=playdata)
+        resp = self.getSoup(loginpage)
         successfulTag = resp.find('a',attrs={'class':'mypage-logout'})
         status = True if successfulTag else False
         if not status:
@@ -22,5 +23,3 @@ class AbcMartPage(login.Login):
         else:
             print('login successful'+ successfulTag.text)
         return status, resp
-
-

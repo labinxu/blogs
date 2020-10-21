@@ -21,11 +21,12 @@ from requests.packages import urllib3
 urllib3.disable_warnings()
 
 class Page():
-    def __init__(self, domain=''):
+    def __init__(self, domain='',proxy=''):
         """
         @param: content web page content
         @param: htmlparser web page parser HTMLParser or bs4.BeautifulSoup
         """
+        self.proxy = proxy
         self.domain = domain
         self.session = requests.Session()
         header = {'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36'}
@@ -33,6 +34,10 @@ class Page():
         self.auth = None
         self.status_code = None
         #import pdb;pdb.set_trace()
+        self.respHeader = None
+
+    def setProxies(self, proxy):
+        self.proxy=proxy
 
     def updateHeaders(self, headers):
         self.session.headers.update(headers)
@@ -56,24 +61,29 @@ class Page():
         self.auth = (username, password)
 
     def getContent(self, url):
-        return self.get(url).content
+        return self.get(url,proxies=self.proxy).content
 
     def get(self, url):
         logger.debug('[+] Get: %s' % url)
-        response = self.session.get(url, auth=self.auth, verify=False)
+        response = self.session.get(url, auth=self.auth, verify=False,proxies=self.proxy)
         self.status_code = response.status_code
         return response
 
     def getSoup(self, url):
         r = self.get(url)
+        self.respHeader=r.headers
         return BeautifulSoup(r.text.encode('utf-8'), 'html.parser')
 
     def post(self, url, data, **kwargs):
-        logger.debug('[+] Post %s' % url)
-        return self.session.post(url, data=data)
+        logger.debug('[+] Post %s with data:%s' % (url,data))
+        return self.session.post(url, data=data,proxies=self.proxy)
+
+    def getRespHeaders(self):
+        return self.respHeader
 
     def postSoup(self, url, data):
         r = self.post(url, data=data)
+        self.respHeader=r.headers
         return BeautifulSoup(r.text.encode('utf-8'), 'html.parser')
 
 ###################################################################

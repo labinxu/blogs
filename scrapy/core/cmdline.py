@@ -20,6 +20,15 @@ class CMDBuilder(object):
 
     def __init__(self):
         pass
+    @staticmethod
+    def cmdbuild(cmdname=None):
+        def build(cls):
+            if cmdname:
+                CMDBuilder.CATEGORIES[cmdname]=cls
+            else:
+                CMDBuilder.CATEGORIES[cls.__name__.lower()]=cls
+            return cls
+        return build
 
     @staticmethod
     def Args(*args,**kwargs):

@@ -46,18 +46,20 @@ class AbcMart(site.Site):
         soup = self.page.getSoup(arturl)
         sizelistTag = soup.find('div',attrs={'class':'choosed_size_list'})
         listdata =[]
-        for dl in sizelistTag.findAll('dl'):
-            if not dl:
+        for li in sizelistTag.findAll('li'):
+            if not li:
                 continue
-            statusTag=dl.find('a',attrs={'class':'ajax_cartbtn_'})
-            if not statusTag:
-                continue
+            size = li.find('strong')
+            listdata.append(size.text.strip())
+            # statusTag=dl.find('a')#,attrs={'class':'ajax_cartbtn_'})
+            # if not statusTag:
+            #     continue
 
-            #size 
-            sizeTag = dl.find('dt')
-            if not sizeTag:
-                continue
-            listdata.append((sizeTag.text.split(' ')[0],statusTag['href']))
+            # #size 
+            # sizeTag = dl.find('dt')
+            # if not sizeTag:
+            #     continue
+            # listdata.append((sizeTag.text.split(' ')[0],statusTag['href']))
         
         return listdata
 
@@ -126,13 +128,13 @@ class AbcMart(site.Site):
     def addcart(self, gcode, size=0):
 
         #https://www.abc-mart.net/shop/g/g6025230001012/
-        carturltmp='https://www.abc-mart.net/shop/g/g%s'
+        carturltmp='https://gs.abc-mart.net/shop/g/g%s'
         #list the goods
         goods = self.listgoods(carturltmp%gcode)
         logger.debug(goods)
         addurl  = 'https://www.abc-mart.net/shop/cart/cart.aspx?goods=%s'%gcode
-        resp=self.page.getSoup(addurl)
-        print(resp)
+        self.page.getSoup(addurl)
+        
         return
         # postdata = {"goods": gcode,"ds_warehouse":""} 
         # headers = {"authority":"www.abc-mart.net",

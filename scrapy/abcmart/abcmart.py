@@ -1,10 +1,10 @@
 from common import site
 from . import abcpage
 import logging,random
-
+import requests,json
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
+# logger.setLevel(logging.INFO) 
 
 class AbcMart(site.Site):
     def __init__(self,sitename,url):
@@ -60,8 +60,28 @@ class AbcMart(site.Site):
             # listdata.append((sizeTag.text.split(' ')[0],statusTag['href']))
         
         return listdata
+    def getProductData(self,gcode,token):
+        header = {
+            'Host': 'app3.abc-mart.net',
+            'OS': 'iOS 14.0.1',
+            'Content-Type': 'application/json',
+            'Connection': 'keep-alive',
+            'Accept-Language': 'zh-Hans-CN;q=1.0, en-CN;q=0.9, zh-Hant-CN;q=0.8',
+            'User-Agent': 'ABC-MART APP',
+            'App-Version': '3.5.2',
+         }
+        productUrl = 'https://app3.abc-mart.net/nativeAppApi/product/GetProductData/'
+        paydata = '{"sku_code":"%s","idToken":"%s"}'%(gcode,token)
+        logger.debug(paydata)
+        resp=requests.post(productUrl,data=paydata,headers=header,verify=False)
+        jsonobj = json.loads(resp.text)
+        productData={}
+        for p in jsonobj['data']['product']['size']:
+            productData[p['name']]=p['sku_code']
+        return productData
 
     def submitOrder(self):
+
         orderurl = 'https://www.abc-mart.net/shop/order/method.aspx'
         resp = self.page.getSoup(orderurl)
         #check status
@@ -114,16 +134,18 @@ class AbcMart(site.Site):
                 except Exception as identifier:
                     logger.info("error"+inputTag['name'])
                     paydata[inputTag['name']]='0'
-        estimateurl='https://www.abc-mart.net/shop/order/estimate.aspx?estimate={estimate}&pointpay={pointpay}&gc={gc}&p={p}&coupon={coupon}&dest_no={dest_no}'
-        orderurl = estimateurl.format(estimate=paydata['estimate'],
-                                      pointpay='',
-                                      gc=paydata['gc'],
-                                      p=paydata['p'],
-                                      coupon='',
-                                      dest_no='0')
-        logger.info(orderurl)
+        estimateurl='https://www.abc-mart.net/shop/order/estimate.aspx?'
+        logger.debug(paydata)
         # TODO:post the data
-    def addcart(self, gcode, size=0):
+        headers={'Content-Type': 'application/x-www-form-urlencoded'}
+        self.page.updateHeaders(headers)
+        data='estimate=%s&gc=&p=&comment=&submit.x=%s&submit.y=%s'%(paydata['estimate'],random.randint(0,200),random.randint(0,100))
+
+        resp = self.page.postSoup(estimateurl,data)
+        ret = resp.find('a')
+        logger.debug(ret.text)
+
+    def addCart(self, gcode):
 
         #https://www.abc-mart.net/shop/g/g6025230001012/
         carturltmp='https://gs.abc-mart.net/shop/g/g%s'

@@ -1,7 +1,9 @@
+import os
 from common import site
 from . import abcpage
 import logging,random
-import requests,json
+import requests,json,time
+import json,time
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.INFO) 
@@ -10,7 +12,7 @@ class AbcMart(site.Site):
     def __init__(self,sitename,url):
         super().__init__(sitename,url)
         self.page=abcpage.AbcMartPage()
-
+        self.user = ""
         header={'authority': 'www.abc-mart.net',
                 'scheme': 'https',
                 'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
@@ -21,6 +23,7 @@ class AbcMart(site.Site):
         self.page.updateHeaders(header)
 
     def login(self,username,passwd):
+        self.user = username
         #visit shop page
         shop = 'https://www.abc-mart.net/shop/'
         self.page.get(shop)
@@ -36,9 +39,19 @@ class AbcMart(site.Site):
         paydata = { 'uid': username,
                      'pwd': passwd,
                      'loginstatesaving': 'true'}
-        self.page.makeAuth(username,passwd)
         loginurl='https://www.abc-mart.net/shop/customer/menu.aspx' 
-        return self.page.login(loginurl,paydata)
+        # active cookies
+        status = False
+        if not self.page.verifyCookie(loginurl, username):
+            status, _ = self.page.login(loginurl,paydata)
+            if status:
+                self.page.storeCookie(username)
+                logger.debug('store cookies')
+            else:
+                logger.error('login failed')        
+        else:
+            return True,""
+        return status,""
 
     def listgoods(self,arturl):        
         soup = self.page.getSoup(arturl)
@@ -49,15 +62,6 @@ class AbcMart(site.Site):
                 continue
             size = li.find('strong')
             listdata.append(size.text.strip())
-            # statusTag=dl.find('a')#,attrs={'class':'ajax_cartbtn_'})
-            # if not statusTag:
-            #     continue
-
-            # #size 
-            # sizeTag = dl.find('dt')
-            # if not sizeTag:
-            #     continue
-            # listdata.append((sizeTag.text.split(' ')[0],statusTag['href']))
         
         return listdata
     def getProductData(self,gcode,token):
@@ -81,7 +85,6 @@ class AbcMart(site.Site):
         return productData
 
     def submitOrder(self):
-
         orderurl = 'https://www.abc-mart.net/shop/order/method.aspx'
         resp = self.page.getSoup(orderurl)
         #check status
@@ -107,6 +110,7 @@ class AbcMart(site.Site):
         }
         
         cartlistTag = resp.find('table',attrs={'class':"formlist_ cartlist_"})
+        goods = {}
         if cartlistTag:
             trTags = cartlistTag.findAll('tr')
             for trTag in trTags:
@@ -118,6 +122,11 @@ class AbcMart(site.Site):
                     except Exception as identifier:
                         paydata[inputTag['name']]='0'
                         logger.info(inputTag['name']+"error")
+                try:
+                    name = trTag.find('div',attrs={'class':'name_'})
+                    goods=name.text
+                finally:
+                    pass
         else:
             logger.error('no cart list found!')
             return
@@ -140,22 +149,60 @@ class AbcMart(site.Site):
         headers={'Content-Type': 'application/x-www-form-urlencoded'}
         self.page.updateHeaders(headers)
         data='estimate=%s&gc=&p=&comment=&submit.x=%s&submit.y=%s'%(paydata['estimate'],random.randint(0,200),random.randint(0,100))
+        while True:
+            resp = self.page.postSoup(estimateurl,data)
+            ret = resp.find('a')
+            #check successful
+            if self.cart()=="Empty":
+                logger.info("Ordered Successful: %s"%goods)
+                with open("%s:%s"%(self.user,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'w') as f:
+                    f.write("%s"%goods)
+                return
+            else:
+                logger.debug(ret.text)
+                time.sleep(random.randint(5))
 
-        resp = self.page.postSoup(estimateurl,data)
-        ret = resp.find('a')
-        logger.debug(ret.text)
+
+    def cart(self,cn=None):
+        carturl = 'https://www.abc-mart.net/shop/cart/cart.aspx'
+        if cn:
+            self.page.activeCookie(cn)
+        soup = self.page.getSoup(carturl)
+        # cartsb=soup.find('a',attrs={'class':"btn_online a_cart_submit"})
+        # if cartsb:
+        #     logger.debug(cartsb.text)
+        #     return "Full"
+        cartlist=soup.find('div',attrs={'class':"cartlist_"})
+        if cartlist:
+            cartform = cartlist.find('form',attrs={'id':'cart_form'})
+            if cartform:
+                cartlist = cartform.find('table',attrs={'class':'formlist_ cartlist_'})
+                if cartlist:
+                    logger.debug('full')
+                    return 'Full'
+                else:
+                    logger.debug('Empty')
+                    return "Empty"
+            else:
+                return "Error"
+
+    def addProxy(self, user, proxies):
+        proxystr = json.dumps(proxies)
+        with open("%s.proxy"%user,'w') as f:
+            f.write(proxystr)
+
+    def activeProxy(self,user,proxies=None):
+        if proxies:
+            self.page.setProxies(proxies)
+            return
+        with open("%s.proxy"%user,'r') as f:
+            self.proxies = json.loads(f.read())
+            logger.debug(self.proxies)
+            self.page.setProxies(self.proxies)
 
     def addCart(self, gcode):
-
-        #https://www.abc-mart.net/shop/g/g6025230001012/
-        carturltmp='https://gs.abc-mart.net/shop/g/g%s'
-        #list the goods
-        goods = self.listgoods(carturltmp%gcode)
-        logger.debug(goods)
         addurl  = 'https://www.abc-mart.net/shop/cart/cart.aspx?goods=%s'%gcode
         self.page.getSoup(addurl)
-        
-        return
         # postdata = {"goods": gcode,"ds_warehouse":""} 
         # headers = {"authority":"www.abc-mart.net",
         #              "method":"POST",

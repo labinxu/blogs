@@ -5,3 +5,4 @@ class Site():
         self.name = name
         self.url=url
         self.page=None
+        self.proxies = {}

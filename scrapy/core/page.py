@@ -1,5 +1,5 @@
 import requests
-import platform
+import platform,os
 from . import logmanager
 
 logger = logmanager.LogManager().getLogger()
@@ -18,27 +18,52 @@ from requests.packages import urllib3
 urllib3.disable_warnings()
 
 class Page():
-    def __init__(self, domain='',proxies=''):
+    def __init__(self, domain=''):
         """
         @param: content web page content
         @param: htmlparser web page parser HTMLParser or bs4.BeautifulSoup
         """
-        self.proxies = proxies
         self.domain = domain
         self.session = requests.Session()
         header = {'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36'}
         self.session.headers.update(header)
         self.auth = None
         self.status_code = None
-        #import pdb;pdb.set_trace()
         self.respHeader = None
-        self.cookies = None
+        self.cookies={}
+        self.res_cookies_txt=''
+        self.proxies = {}
 
-    def setProxies(self, proxies):
-        self.proxies=proxies
+    def setProxies(self,proxies):
+        self.proxies = proxies
 
     def updateHeaders(self, headers):
         self.session.headers.update(headers)
+
+    def activeCookie(self,cookiename):
+        ckpath = cookiename
+        if not os.path.exists(ckpath):
+            logger.info("%s not exist"%ckpath)
+            return False
+
+        with open(ckpath,'r',encoding='utf-8') as f:
+            cookies_txt = f.read().strip(';')
+            for cookie in cookies_txt.split(';'):
+                name,value=cookie.strip().split('=',1)
+                self.cookies[name]=value
+        #将字典转为CookieJar：
+        self.session.cookies=requests.utils.cookiejar_from_dict(self.cookies,
+                                                                cookiejar=None,overwrite=True)
+        return True
+    
+    def storeCookie(self,cookiename):
+        res_cookies_dic = requests.utils.dict_from_cookiejar(self.session.cookies)
+        for i in res_cookies_dic.keys():
+            self.cookies[i] = res_cookies_dic[i]
+        for k in self.cookies.keys():
+            self.res_cookies_txt += k+"="+self.cookies[k]+";"
+        with open(cookiename,'w',encoding="utf-8") as f:
+            f.write(self.res_cookies_txt)
 
     def setHeaders(self, headers):
         self.session.headers = headers
@@ -58,12 +83,9 @@ class Page():
     def makeAuth(self, username, password):
         self.auth = (username, password)
 
-    def getContent(self, url):
-        return self.get(url,proxies=self.proxy).content
-
-    def get(self, url):
+    def get(self, url,**kwargs):
         logger.debug('[+] Get: %s' % url)
-        response = self.session.get(url, auth=self.auth, verify=False,proxies=self.proxies)
+        response = self.session.get(url, auth=self.auth, verify=False, proxies=self.proxies)
         self.status_code = response.status_code
         return response
 
@@ -74,14 +96,13 @@ class Page():
 
     def post(self, url, data, **kwargs):
         logger.debug('[+] Post %s with data:%s' % (url,data))
-        return self.session.post(url, data=data,proxies=self.proxies)
+        return  self.session.post(url, data=data, proxies=self.proxies)
 
     def getRespHeaders(self):
         return self.respHeader
 
     def postSoup(self, url, data):
         r = self.post(url, data=data)
-        self.respHeader=r.headers
         return BeautifulSoup(r.text.encode('utf-8'), 'html.parser')
 
 ###################################################################

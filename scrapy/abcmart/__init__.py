@@ -4,3 +4,6 @@
 #     return filepath,shotname,extension
 import sys
 sys.path.append('..')
+from abcmart import abcmart
+def GetSite():
+    return abcmart.AbcMart('abcmart','www.abc-mart.net')

@@ -9,8 +9,6 @@ logger = logging.getLogger(__name__)
 class AbcMart(site.Site):
     def __init__(self,sitename,url):
         super().__init__(sitename,url)
-        
-
         self.page=abcpage.AbcMartPage()
 
         header={'authority': 'www.abc-mart.net',

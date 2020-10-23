@@ -1,11 +1,8 @@
 import requests
 import platform
-import logging
+from . import logmanager
 
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
+logger = logmanager.LogManager().getLogger()
 
 if platform.system() == 'Windows':
     try:
@@ -21,12 +18,12 @@ from requests.packages import urllib3
 urllib3.disable_warnings()
 
 class Page():
-    def __init__(self, domain='',proxy=''):
+    def __init__(self, domain='',proxies=''):
         """
         @param: content web page content
         @param: htmlparser web page parser HTMLParser or bs4.BeautifulSoup
         """
-        self.proxy = proxy
+        self.proxies = proxies
         self.domain = domain
         self.session = requests.Session()
         header = {'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36'}
@@ -35,9 +32,10 @@ class Page():
         self.status_code = None
         #import pdb;pdb.set_trace()
         self.respHeader = None
+        self.cookies = None
 
-    def setProxies(self, proxy):
-        self.proxy=proxy
+    def setProxies(self, proxies):
+        self.proxies=proxies
 
     def updateHeaders(self, headers):
         self.session.headers.update(headers)
@@ -65,7 +63,7 @@ class Page():
 
     def get(self, url):
         logger.debug('[+] Get: %s' % url)
-        response = self.session.get(url, auth=self.auth, verify=False,proxies=self.proxy)
+        response = self.session.get(url, auth=self.auth, verify=False,proxies=self.proxies)
         self.status_code = response.status_code
         return response
 
@@ -76,7 +74,7 @@ class Page():
 
     def post(self, url, data, **kwargs):
         logger.debug('[+] Post %s with data:%s' % (url,data))
-        return self.session.post(url, data=data,proxies=self.proxy)
+        return self.session.post(url, data=data,proxies=self.proxies)
 
     def getRespHeaders(self):
         return self.respHeader

@@ -9,8 +9,19 @@ class Task():
         taskdata 
         '''
         self.taskname = name
-        module = importlib.import_module(name)
-        site = module.GetSite()
+        sitename = kwargs.pop('sitename',None)
+        site = None
+        if not sitename:
+            if sitename=='abcmart':
+                import abcmart as module
+                site = module.GetSite()
+        else:
+            import abcmart as module
+            site = module.GetSite()
+        #module = importlib.import_module(name)
+        
+        #user = kwargs.pop("user", None)
+    
         site.login('flow@gmail.com','juyoujin110')
 
-Task("abcmart")
+Task("abcmart",sitename='abcmart')

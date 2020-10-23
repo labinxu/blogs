@@ -1,5 +1,10 @@
 #!/bin/env python
 from . import page
+import logging
+#pip install fake-useragent
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 class Login(page.Page):
     def __init__(self, securetype='http', port='80', domain=''):
         super().__init__()

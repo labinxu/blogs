@@ -90,8 +90,16 @@ class AbcMart(site.Site):
         #check status
         submitTag = resp.find('input',attrs={'name':'submit','class':'confirmation_btn','id':'FormAssist_submit'}) 
         if not submitTag:
-            logger.error("page is invalied")
-            return
+            while True:
+                logger.error("page is invalied")
+                resp = self.page.getSoup(orderurl)
+                #check status
+                submitTag = resp.find('input',attrs={'name':'submit','class':'confirmation_btn','id':'FormAssist_submit'}) 
+            
+                if submitTag:
+                    break
+                time.sleep(random.randint(1,10))
+        
         # post data
         paydata = {
             'mode':'',
@@ -160,7 +168,7 @@ class AbcMart(site.Site):
                 return
             else:
                 logger.debug(ret.text)
-                time.sleep(random.randint(5))
+                time.sleep(random.randint(1,5))
 
 
     def cart(self,cn=None):

@@ -155,7 +155,7 @@ class AbcMart(site.Site):
             #check successful
             if self.cart()=="Empty":
                 logger.info("Ordered Successful: %s"%goods)
-                with open("%s:%s"%(self.user,time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),'w') as f:
+                with open("%s:%s"%(self.user,time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())),'w') as f:
                     f.write("%s"%goods)
                 return
             else:
